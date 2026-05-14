@@ -1,6 +1,6 @@
 # Concert Finder 
 
-**[Live Demo](https://concert-finder-ebon.vercel.app)**
+**[Link](https://concert-finder-ebon.vercel.app)**
 
 Concert Finder is an app I built to discover live music near you. You can see upcoming shows pinned on a map, filter by genre, search by artist, and switch between a map view and a Netflix-style list view. All the concert data comes from Ticketmaster in real time.
 
