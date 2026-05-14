@@ -233,23 +233,28 @@ export function GenreFilterPanel({
               const pState = parentCheckboxState(node, row);
               const isOpen = expanded[node.parent] ?? false;
               const chevron = isOpen ? "▼" : "▶";
+              const hasSubs = node.subs.length > 0;
               return (
                 <div className="genre-panel-parent" key={node.parent} role="treeitem">
                   <div className="genre-panel-parent-row">
-                    <button
-                      type="button"
-                      className="genre-panel-expand"
-                      aria-expanded={isOpen}
-                      aria-label={isOpen ? "Collapse subgenres" : "Expand subgenres"}
-                      onClick={() =>
-                        setExpanded((prev) => ({
-                          ...prev,
-                          [node.parent]: !isOpen,
-                        }))
-                      }
-                    >
-                      {chevron}
-                    </button>
+                    {hasSubs ? (
+                      <button
+                        type="button"
+                        className="genre-panel-expand"
+                        aria-expanded={isOpen}
+                        aria-label={
+                          isOpen ? "Collapse subgenres" : "Expand subgenres"
+                        }
+                        onClick={() =>
+                          setExpanded((prev) => ({
+                            ...prev,
+                            [node.parent]: !isOpen,
+                          }))
+                        }
+                      >
+                        {chevron}
+                      </button>
+                    ) : null}
                     <label className="genre-panel-parent-label">
                       <ParentCheckbox
                         state={pState}
@@ -261,7 +266,7 @@ export function GenreFilterPanel({
                       </span>
                     </label>
                   </div>
-                  {isOpen ? (
+                  {hasSubs && isOpen ? (
                     <div className="genre-panel-subs" role="group">
                       {node.subs.map((s) => {
                         const included =

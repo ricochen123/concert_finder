@@ -4,19 +4,18 @@
  */
 export const KNOWN_PARENT_ORDER: readonly string[] = [
   "Pop",
+  "K-Pop",
   "Hip-Hop/Rap",
   "Electronic / EDM",
   "R&B",
   "Rock",
   "Country",
-  "Latin",
   "Alternative",
   "Metal",
   "Folk",
   "Jazz",
   "Blues",
   "Classical",
-  "Reggae",
   "World / International",
   "Religious & Gospel",
   "Children's Music",
@@ -29,6 +28,24 @@ function n(s: string | undefined): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "");
+}
+
+function isKpop(genre: string, subGenre: string): boolean {
+  const g = n(genre);
+  const sg = n(subGenre);
+  if (/\bkpop\b/.test(g) || /\bk[\s-]?pop\b/.test(g)) return true;
+  if (/\bkpop\b/.test(sg) || /\bk[\s-]?pop\b/.test(sg)) return true;
+  if (g.includes("korean") && (g.includes("pop") || sg.includes("pop")))
+    return true;
+  return false;
+}
+
+function isLatinOrReggaeGenre(genre: string, subGenre: string): boolean {
+  const g = n(genre);
+  const sg = n(subGenre);
+  if (g === "latin" || sg === "latin" || g.includes("latin")) return true;
+  if (g === "reggae" || sg === "reggae" || g.includes("reggae")) return true;
+  return false;
 }
 
 function isElectronicCombo(genre: string, subGenre: string): boolean {
@@ -96,6 +113,10 @@ export function routeFilterParent(
   if (isReligious(g0, sg0, seg0)) return "Religious & Gospel";
 
   if (n(g0) === "world" || n(sg0) === "world") return "World / International";
+
+  if (isLatinOrReggaeGenre(g0, sg0)) return "World / International";
+
+  if (isKpop(g0, sg0)) return "K-Pop";
 
   if (isElectronicCombo(g0, sg0)) return "Electronic / EDM";
 

@@ -33,9 +33,8 @@ export function buildGenreTree(events: ConcertListItem[]): GenreTreeNode[] {
     const sm = byParent.get(parent)!;
     const allSubs = [...sm.entries()].map(([sub, count]) => ({ sub, count }));
     const count = allSubs.reduce((acc, x) => acc + x.count, 0);
-    const subs = allSubs
-      .filter((x) => !isHiddenGenreSubkey(x.sub))
-      .sort((a, b) => b.count - a.count || a.sub.localeCompare(b.sub));
+    // Subgenres hidden in the filter UI; parent checkbox only.
+    const subs: GenreSubCount[] = [];
     return { parent, subs, count };
   });
 }

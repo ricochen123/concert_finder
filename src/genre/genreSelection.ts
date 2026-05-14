@@ -13,7 +13,7 @@ export type GenreSelectionMap = Record<string, ParentGenreSel>;
 export function initGenreSelection(tree: GenreTreeNode[]): GenreSelectionMap {
   const out: GenreSelectionMap = {};
   for (const node of tree) {
-    out[node.parent] = { mode: "none", subs: null };
+    out[node.parent] = { mode: "all", subs: null };
   }
   return out;
 }
@@ -56,7 +56,7 @@ export function mergeGenreSelection(
     const subKeys = node.subs.map((s) => s.sub);
     const existing = out[node.parent];
     if (!existing) {
-      out[node.parent] = { mode: "none", subs: null };
+      out[node.parent] = { mode: "all", subs: null };
       continue;
     }
     if (existing.mode === "all") {
