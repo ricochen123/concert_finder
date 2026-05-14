@@ -320,7 +320,9 @@ function pickBestEventImage(
     if (d !== 0) return d;
     return a.width - b.width;
   });
-  return ranked.find((i) => i.width >= 280) ?? ranked.at(-1);
+  const fallback =
+    ranked.length > 0 ? ranked[ranked.length - 1] : undefined;
+  return ranked.find((i) => i.width >= 280) ?? fallback;
 }
 
 function eventToItem(

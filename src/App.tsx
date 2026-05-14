@@ -11,8 +11,6 @@ import { geocodePlace } from "./api/geocode";
 import {
   fetchConcertsNear,
   initialFetchPagesForRadius,
-  TM_LOAD_MORE_PAGE_BATCH,
-  TM_MAX_PAGES_PER_SEARCH,
   type ConcertListItem,
 } from "./api/ticketmaster";
 import { DateRangeFilter, type DateRangeValue } from "./components/DateRangeFilter";
@@ -59,10 +57,6 @@ const ZOOM_AFTER_LOCATE = 15;
 
 type ViewMode = "map" | "list";
 
-async function sleep(ms: number) {
-  await new Promise((r) => setTimeout(r, ms));
-}
-
 export default function App() {
   const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "";
   const tmKey = import.meta.env.VITE_TICKETMASTER_API_KEY ?? "";
@@ -83,14 +77,6 @@ export default function App() {
   const [geoWorking, setGeoWorking] = useState(false);
   const [isUserAnchor, setIsUserAnchor] = useState(false);
   const [accuracyMeters, setAccuracyMeters] = useState<number | null>(null);
-  const [tmMeta, setTmMeta] = useState<{
-    totalElements: number;
-    totalPages: number | null;
-    nextStartPage: number;
-    hasMore: boolean;
-  } | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
-
   const [locationQuery, setLocationQuery] = useState("");
   const [geoSearchWorking, setGeoSearchWorking] = useState(false);
   const [areaPrompt, setAreaPrompt] = useState("New York City area (default)");
@@ -126,7 +112,6 @@ export default function App() {
   useEffect(() => {
     if (!tmKey) {
       setEvents([]);
-      setTmMeta(null);
       setLoading(false);
       return;
     }
@@ -134,7 +119,6 @@ export default function App() {
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    setTmMeta(null);
 
     fetchConcertsNear({
       apiKey: tmKey,
@@ -145,24 +129,17 @@ export default function App() {
       maxPages: initialFetchPagesForRadius(radius),
       signal: controller.signal,
     })
-      .then(({ events: next, meta }) => {
+      .then(({ events: next }) => {
         const areaKey = `${tmKey}|${center.lat.toFixed(5)}|${center.lng.toFixed(5)}`;
         const areaChanged = areaResetKeyRef.current !== areaKey;
         if (areaChanged) areaResetKeyRef.current = areaKey;
         setEvents(next);
         setSelectedKey(null);
         if (areaChanged) setFilterEpoch((e) => e + 1);
-        setTmMeta({
-          totalElements: meta.totalElements,
-          totalPages: meta.totalPages,
-          nextStartPage: meta.startPage + meta.pagesLoaded,
-          hasMore: meta.hasMore,
-        });
       })
       .catch((e: unknown) => {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setEvents([]);
-        setTmMeta(null);
         setError(e instanceof Error ? e.message : "Failed to load concerts.");
       })
       .finally(() => {
@@ -175,73 +152,6 @@ export default function App() {
   useEffect(() => {
     setMapZoom(zoomForRadiusMiles(radius));
   }, [radius]);
-
-  const loadMoreShows = async () => {
-    if (!tmKey || loadingMore) return;
-    const snap = tmMeta;
-    if (!snap?.hasMore) return;
-    if (snap.nextStartPage >= TM_MAX_PAGES_PER_SEARCH) {
-      setError("Reached the maximum number of pages for one search.");
-      return;
-    }
-
-    setLoadingMore(true);
-    setError(null);
-
-    const attempt = async () => {
-      const { events: more, meta } = await fetchConcertsNear({
-        apiKey: tmKey,
-        lat: center.lat,
-        lng: center.lng,
-        radiusMiles: radius,
-        startPage: snap.nextStartPage,
-        maxPages: TM_LOAD_MORE_PAGE_BATCH,
-      });
-      return { more, meta };
-    };
-
-    try {
-      let lastErr: unknown;
-      for (let tries = 0; tries < 3; tries++) {
-        try {
-          if (tries > 0) await sleep(350 * tries);
-          const { more, meta } = await attempt();
-          setEvents((prev) => {
-            const byId = new Map(prev.map((e) => [e.id, e]));
-            for (const e of more) {
-              byId.set(e.id, e);
-            }
-            return Array.from(byId.values());
-          });
-          setTmMeta({
-            totalElements: meta.totalElements,
-            totalPages: meta.totalPages,
-            nextStartPage: meta.startPage + meta.pagesLoaded,
-            hasMore: meta.hasMore,
-          });
-          lastErr = undefined;
-          break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (lastErr != null) throw lastErr;
-    } catch (e: unknown) {
-      const msg =
-        e instanceof Error
-          ? e.message
-          : typeof e === "string"
-            ? e
-            : "Could not load more events.";
-      setError(
-        msg === "Failed to fetch"
-          ? "Network error while loading more (try again in a moment)."
-          : msg,
-      );
-    } finally {
-      setLoadingMore(false);
-    }
-  };
 
   const useMyLocation = () => {
     if (!navigator.geolocation) {
